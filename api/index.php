@@ -63,13 +63,15 @@ header{background:#1a73e8;color:#fff;padding:22px;text-align:center}
 header h1{font-size:1.8rem}
 header p{font-size:.9rem;opacity:.85;margin-top:4px}
 .container{max-width:960px;margin:30px auto;padding:0 16px}
-form{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
-.field{position:relative;flex:1;min-width:200px}
+form{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;overflow:visible}
+.field{position:relative;flex:1;min-width:200px;z-index:50}
 .field input{width:100%;padding:12px 16px;border:1px solid #ccc;border-radius:8px;font-size:1rem}
 .field input:focus{outline:none;border-color:#1a73e8}
-.suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-top:none;border-radius:0 0 8px 8px;z-index:100;max-height:220px;overflow-y:auto}
-.suggestions li{padding:10px 16px;cursor:pointer;list-style:none;font-size:.95rem}
+.suggestions{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:8px;z-index:9999;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.suggestions li{padding:10px 16px;cursor:pointer;list-style:none;font-size:.95rem;border-bottom:1px solid #f5f5f5}
+.suggestions li:last-child{border-bottom:none}
 .suggestions li:hover{background:#e8f0fe}
+.suggestions .s-loading{padding:10px 16px;color:#999;font-size:.9rem;font-style:italic}
 form button{padding:12px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;align-self:flex-start}
 form button:hover{background:#1558c0}
 .info{background:#e8f0fe;border-left:4px solid #1a73e8;padding:12px 16px;border-radius:8px;margin:20px 0;font-size:.95rem}
@@ -191,22 +193,34 @@ cidadeInput.addEventListener('input', () => {
     codigoInput.value = '';
     const q = cidadeInput.value.trim();
     if (q.length < 2) { suggestions.style.display = 'none'; return; }
+    // show loading
+    suggestions.innerHTML = '<li class="s-loading">Buscando cidades...</li>';
+    suggestions.style.display = 'block';
     timer = setTimeout(async () => {
-        const res = await fetch(`?autocomplete=${encodeURIComponent(q)}`);
-        const data = await res.json();
-        suggestions.innerHTML = '';
-        if (!data.length) { suggestions.style.display = 'none'; return; }
-        data.forEach(m => {
-            const li = document.createElement('li');
-            li.textContent = m.nome;
-            li.addEventListener('click', () => {
-                cidadeInput.value = m.nome;
-                codigoInput.value = m.codigo;
-                suggestions.style.display = 'none';
+        try {
+            const res = await fetch(`?autocomplete=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            suggestions.innerHTML = '';
+            if (!data.length) {
+                suggestions.innerHTML = '<li class="s-loading">Nenhuma cidade encontrada.</li>';
+                suggestions.style.display = 'block';
+                return;
+            }
+            data.forEach(m => {
+                const li = document.createElement('li');
+                li.textContent = m.nome;
+                li.addEventListener('mousedown', e => {
+                    e.preventDefault(); // evita blur antes do click
+                    cidadeInput.value = m.nome;
+                    codigoInput.value = m.codigo;
+                    suggestions.style.display = 'none';
+                });
+                suggestions.appendChild(li);
             });
-            suggestions.appendChild(li);
-        });
-        suggestions.style.display = 'block';
+            suggestions.style.display = 'block';
+        } catch(err) {
+            suggestions.style.display = 'none';
+        }
     }, 300);
 });
 
