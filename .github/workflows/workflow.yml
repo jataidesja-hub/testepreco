@@ -1,0 +1,29 @@
+name: Build and Test PHP Project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Build da imagem Docker
+      - name: Build Docker image
+        run: docker build -t php-project .
+
+      # Rodar os testes no container Docker
+      - name: Run tests
+        run: |
+          docker run --rm \
+            php-project \
+            /app/vendor/bin/pest
